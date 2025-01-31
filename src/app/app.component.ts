@@ -5,91 +5,48 @@ import { Employee } from './employee';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [
-    RouterOutlet, 
-    CommonModule, 
-    FormsModule
-  ],  
+  imports: [CommonModule, FormsModule, RouterOutlet],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
 
-  private modalService = inject(NgbModal);
   public employees: Employee[] = [];
-  public editEmployee: Employee | undefined;
-  public deleteEmployee: Employee | undefined;
+  public employee!: Employee;
+  public editEmployee?: Employee;
+  public deleteEmployee?: Employee;
 
-  constructor(private employeeService: EmployeeService){} 
+  private employeeService = inject(EmployeeService);
 
   ngOnInit(): void {
     this.getEmployees();
   }
 
-  public getEmployees(): void{
+  public getEmployees(): void {
+    console.log('Fetching all employees...');
     this.employeeService.getEmployees().subscribe(
-      (response: Employee[]) => { this.employees = response },
-      (error: HttpErrorResponse) => {
-        alert(error.message);
-      }
-    );
-  }
-
-  public onAddEmloyee(addForm: NgForm): void {
-    const addEmployeeForm = document.getElementById('add-employee-form');
-    if (addEmployeeForm) {
-      addEmployeeForm.click();
-    }
-    this.employeeService.addEmployee(addForm.value).subscribe(
-      (response: Employee) => {
+      (response: Employee[]) => {
         console.log(response);
-        this.getEmployees();
-        addForm.reset();
+        this.employees = response;
       },
       (error: HttpErrorResponse) => {
-        alert(error.message);
-        addForm.reset();
-      }
-    );
-  }
-
-  public onUpdateEmloyee(employee: Employee): void {
-    this.employeeService.updateEmployee(employee).subscribe(
-      (response: Employee) => {
-        console.log(response);
-        this.getEmployees();
-      },
-      (error: HttpErrorResponse) => {
-        alert(error.message);
-      }
-    );
-  }
-
-  public onDeleteEmloyee(employeeId: number): void {
-    this.employeeService.deleteEmployee(employeeId).subscribe(
-      (response: void) => {
-        console.log(response);
-        this.getEmployees();
-      },
-      (error: HttpErrorResponse) => {
-        alert(error.message);
+        console.error(error);
       }
     );
   }
 
   public searchEmployees(key: string): void {
-    console.log(key);
+    console.log('Searching employees...');
     const results: Employee[] = [];
     for (const employee of this.employees) {
-      if (employee.name.toLowerCase().indexOf(key.toLowerCase()) !== -1
-      || employee.email.toLowerCase().indexOf(key.toLowerCase()) !== -1
-      || employee.phone.toLowerCase().indexOf(key.toLowerCase()) !== -1
-      || employee.jobTitle.toLowerCase().indexOf(key.toLowerCase()) !== -1) {
+      if (employee.name.toLowerCase().includes(key.toLowerCase()) ||
+          employee.email.toLowerCase().includes(key.toLowerCase()) ||
+          employee.phone.toLowerCase().includes(key.toLowerCase()) ||
+          employee.jobTitle.toLowerCase().includes(key.toLowerCase())) {
         results.push(employee);
       }
     }
@@ -99,6 +56,50 @@ export class AppComponent implements OnInit {
     }
   }
 
+  public onAddEmployee(employeeForm: NgForm): void {
+    var addEmployeeForm = document.getElementById('add-employee-form');
+    addEmployeeForm?.click();
+
+    console.log('Adding employee...', employeeForm.value);
+    this.employeeService.addEmployee(employeeForm.value).subscribe(
+      (response: Employee) => {
+        console.log(response);
+        this.getEmployees();
+        employeeForm.reset();
+      },
+      (error: HttpErrorResponse) => {
+        console.error(error);
+        employeeForm.reset();
+      }
+    );
+  }
+
+  public onUpdateEmployee(employee: Employee): void {
+    console.log(`Editing employee...`, employee);
+    this.employeeService.updateEmployee(employee).subscribe(
+      (response: Employee) => {
+        console.log(response);
+        this.getEmployees();
+      },
+      (error: HttpErrorResponse) => {
+        console.error(error);
+      }
+    );
+  }
+
+  public onDeleteEmployee(employeeId: number): void {
+    console.log(`Deleting employee by id: ${employeeId}`);
+    this.employeeService.deleteEmployee(employeeId).subscribe(
+      () => {
+        console.log(`Employee deleted`);
+        this.getEmployees();
+      },
+      (error: HttpErrorResponse) => {
+        console.error(error);
+      }
+    );
+  }
+
   public onOpenModal(employee: Employee | null, mode: string): void {
     const container = document.getElementById('main-container');
     if (container) {
@@ -106,7 +107,8 @@ export class AppComponent implements OnInit {
       button.type = 'button';
       button.style.display = 'none';
       button.setAttribute('data-toggle', 'modal');
-      if (mode === 'add' && employee) {
+
+      if (mode === 'add') {
         button.setAttribute('data-target', '#addEmployeeModal');
       }
       if (mode === 'edit' && employee) {
@@ -121,5 +123,4 @@ export class AppComponent implements OnInit {
       button.click();
     }
   }
-
 }
